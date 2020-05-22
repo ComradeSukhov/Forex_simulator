@@ -1,104 +1,190 @@
-class GraphWindow
-  attr_accessor :vertical_padding, :image_height
-  attr_reader :canvas, :settings
+class GraphWindow < Magick::ImageList
 
   def initialize(settings)
-    @settings         = settings
-    @image_width      = 1280
-    @image_height     = 720
-    @vertical_padding = 10
-    @canvas           = Magick::ImageList.new
-    @grid             = Magick::HatchFill.new('white', 'grey95', 10)
-    @candles          = Candles.new(1589749200, 1589752200, self).candles
-    @left_scale       = LeftScale.new
-    @right_scale      = RightScale.new
-    @bottom_scale     = BottomScale.new
+    super()
 
-    @canvas.new_image(@image_width, @image_height, @grid)
-    @candles.     draw(@canvas)
-    # @left_scale.  draw(@canvas)
-    # @right_scale. draw(@canvas)
-    # @bottom_scale.draw(@canvas)
-  end
-end
+    self.new_image(settings['image_width'], 
+      settings['image_height'],
+      Magick::HatchFill.new(settings['grid_main_color'],
+        settings['grid_line_color'],
+        settings['grid_step']))
 
-class Candles
-  attr_reader :candles
-
-  def initialize(start_date, finish_date, canvas)
+    GraphImage.take_and_process(settings)
     
-    rate = JSON.parse(File.read('data/candles/' + 
-     'minute_candles_db.json')).transform_keys { |k| k.to_i}
-
-    @density   = 14 # плотность отображения японских свечей
-    @thickness = 10 # толщина одной свечи
-
-    top_extremum = to_points(rate.map { |x| x[1]['max']}.max) # верх графика
-    low_extremum = to_points(rate.map { |x| x[1]['min']}.min) # низ графика
-    amplitude    = top_extremum - low_extremum                 # размер графика
-    scale_ratio  = (canvas.image_height.to_f -
-                   canvas.vertical_padding * 2) /amplitude
-    # коэффициент масштабирования при размещении графика на экране
-
-    candles = Magick::Draw.new
-    candles.stroke('green')
-    candles.fill('green')
-    candles.stroke_width(1)
-
-    counter = 0
-    start_date.step(finish_date, 60) do |i|
-
-      if rate[i]['start'] < rate[i]['finish']
-        candles.fill_opacity(1)
-      else
-        candles.fill_opacity(0)
-      end
-
-      candles.rectangle(
-        counter * @density,
-        (top_extremum - to_points(rate[i]["start"])) * scale_ratio + 10,
-
-        counter * @density + @thickness,
-        (top_extremum - to_points(rate[i]["finish"])) * scale_ratio + 10 + 1,
-        )
-
-      high_end       = [rate[i]['start'], rate[i]['finish']].max
-      low_end        = [rate[i]['start'], rate[i]['finish']].min
-      candles_center = counter * @density + @thickness / 2
-
-      if rate[i]['max'] != high_end
-        candles.line(
-          candles_center,
-          (top_extremum - to_points(high_end)) * scale_ratio + 10,
-
-          candles_center,
-          (top_extremum - to_points(rate[i]["max"])) * scale_ratio + 10
-          )
-      end
-
-      if rate[i]['min'] != low_end
-
-        candles.line(
-          candles_center,
-          (top_extremum - to_points(low_end)) * scale_ratio + 10 + 1,
-
-          candles_center,
-          (top_extremum - to_points(rate[i]["min"])) * scale_ratio + 10
-          )
-      end
-      counter += 1
-    end
-    @candles = candles
+    Candles.new.draw(self)
+    # LeftScale.new(settings)  .left_scale.drow(self)
+    # RightScale.new(settings) .right_scale.drow(self)
+    # BottomScale.new(settings).bottom_scale.drow(self)
   end
 end
 
-class LeftScale
+
+
+class GraphImage < Magick::Draw
+
+  class << self
+
+    attr_reader :settings
+
+    def take_and_process(settings)
+      @settings = add_params(settings) 
+    end
+
+
+    private
+
+
+    def add_params(hash)
+
+      hash['history']      = to_points(rate_history)
+      hash['top_extremum'] = top_extremum(hash['history'])
+      hash['low_extremum'] = low_extremum(hash['history'])
+      hash['amplitude']    = amplitude(hash)
+      hash['scale_ratio']  = scale_ratio(hash)
+      hash
+
+    end
+
+    def rate_history
+      JSON.parse(File.read('data/candles/' + 
+        'minute_candles_db.json')).transform_keys { |k| k.to_i}
+    end
+
+    def top_extremum(history)
+      history.map { |x| x[1]['max'] }.max
+    end
+
+    def low_extremum(history)
+      history.map { |x| x[1]['min'] }.min
+    end
+
+    def amplitude(hash)
+      hash['top_extremum'] - hash['low_extremum']  
+    end
+
+    def scale_ratio(hash)
+      (hash['image_height'].to_f -
+        hash['vertical_padding'] * 2) / hash['amplitude']
+    end
+
+    def to_points(rate_history)
+      rate_history.each_value do |val|
+        val.each_value{ |value| (value * 10_000).round }
+      end
+    end
+
+  end
+
+  def initialize
+    super
+  end
+
+
+  private
+
+
+  def to_graph(value, settings)
+    (settings['top_extremum'] - value) *
+    settings['scale_ratio'] + settings['vertical_padding']
+  end
+
 
 end
 
-class RightScale
+
+
+class Candles < GraphImage
+
+  def initialize
+    super
+
+    settings = GraphImage.settings
+
+    self.stroke('green')
+    self.fill('green')
+    self.stroke_width(1)
+
+    settings['start_date'].step(settings['finish_date'], 60).with_index do 
+      |i, nth_candle|
+
+      paint_candle(i, settings)
+      draw_candle_body(i, nth_candle, settings)
+      draw_body_shadows(i, nth_candle, settings)
+      
+    end
+  end
+
+
+  private
+
+
+  def paint_candle(i, settings)
+    if settings['history'][i]['start'] < settings['history'][i]['finish']
+      self.fill_opacity(1)
+    else
+      self.fill_opacity(0)
+    end
+  end
+
+
+  def draw_candle_body(i, nth_candle, settings)
+
+    start  = settings['history'][i]['start']
+    finish = settings['history'][i]['finish']
+
+    self.rectangle(
+      nth_candle * settings['density'],
+      to_graph(start, settings),
+
+      nth_candle * settings['density'] + settings['thickness'],
+      to_graph(finish, settings) + 1,
+      )
+  end
+
+
+  def draw_body_shadows(i, nth_candle, settings)
+
+    start  = settings['history'][i]['start']
+    finish = settings['history'][i]['finish']
+    max    = settings['history'][i]['max']
+    min    = settings['history'][i]['min']
+
+    high_end      = [start, finish].max
+    low_end       = [start, finish].min
+    middle_center = nth_candle * settings['density'] + settings['thickness'] / 2
+
+    if max != high_end
+      self.line(
+        middle_center,
+        to_graph(high_end, settings),
+
+        middle_center,
+        to_graph(max, settings)
+        )
+    end
+
+    if min != low_end
+
+      self.line(
+        middle_center,
+        to_graph(low_end, settings) + 1,
+
+        middle_center,
+        to_graph(min, settings)
+        )
+    end
+  end
+end
+
+
+class LeftScale < GraphImage
 
 end
 
-class BottomScale
+class RightScale < GraphImage
+
+end
+
+class BottomScale < GraphImage
+
 end

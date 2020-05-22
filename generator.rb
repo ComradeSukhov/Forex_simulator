@@ -5,7 +5,7 @@ rate = {}
 dollar = 75.0
 euro   = 82.0
 
-50.times do |i|
+1589749200.step(1589752200, 60) do |i|
   minute_history = []
 
   60.times do |x|
@@ -21,6 +21,7 @@ euro   = 82.0
     'max'    => minute_history.max,
     'min'    => minute_history.min 
   }
+
 end
 
-File.write('candles_db.json', rate.to_json)
+File.write('data/candles/minute_candles_db.json', rate.to_json)

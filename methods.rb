@@ -1,11 +1,5 @@
-def to_points(rate_value)
-  (rate_value * 10_000).round  
-end
-
-
-
 def scale_step(amplitude)
-  
+
   case amplitude
   when 0..5
     1
@@ -28,8 +22,8 @@ def scale_step(amplitude)
   when 321...650
     100  
   else
-    
-  handsome_round(amplitude)
+
+    handsome_round(amplitude)
 
   end
 end
