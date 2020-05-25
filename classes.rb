@@ -1,7 +1,9 @@
 class GraphWindow < Magick::ImageList
 
-  def initialize(settings)
-    super()
+  def initialize
+    super
+
+    settings = read_settings
 
     self.new_image(settings["image_width"], 
                    settings["image_height"], 
@@ -9,11 +11,28 @@ class GraphWindow < Magick::ImageList
                                          settings["grid_line_color"],
                                          settings["grid_step"]))
 
+
     GraphImage.take_and_process(settings)
     Candles.new.draw(self)
     LeftScale.new.draw(self)
-    # RightScale.new.(settings) .right_scale.draw(self)
-    # BottomScale.new.(settings).bottom_scale.draw(self)
+  
+  end
+  
+  private
+
+  def read_settings
+
+    settings = {}
+    current_path = File.dirname(__FILE__)
+
+    
+    doc = File.read(current_path +
+          "/default_settings.xml").scan /<(\w+)>(\w+)<\/\1>/
+    
+    doc.each { |i| settings[i[0]] = i[1].match(/\A\d+\z/) ? i[1].to_i : i[1] }
+    
+    settings
+
   end
 end
 
@@ -288,11 +307,4 @@ class LeftScale < GraphImage
     end
   end
 
-end
-
-class RightScale < GraphImage
-
-end
-
-class BottomScale < GraphImage
 end

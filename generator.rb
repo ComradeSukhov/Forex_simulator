@@ -66,7 +66,9 @@ xml = Nokogiri::XML::Builder.new { |xml|
   end
 }.to_xml
 
+
 current_path = File.dirname(__FILE__)
+
 
 File.write(current_path + '/data/candles/minute_candles_db.json', rate.to_json)
 File.write(current_path + '/default_settings.xml', xml)
