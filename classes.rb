@@ -84,7 +84,7 @@ class GraphImage < Magick::Draw
     def scale_step(amplitude) 
       case amplitude
       when 0..5
-        return 1, 0
+        return 1, 1
       when 6..12
         return 2, 1
       when 13..22
