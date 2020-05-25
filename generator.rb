@@ -1,4 +1,5 @@
 require 'json'
+require 'nokogiri'
 
 rate = {}
 
@@ -22,6 +23,12 @@ euro   = 82.0
     'min'    => minute_history.min 
   }
 
+end
+
+xml = Nokogiri::XML::Builder.new do |xml|
+  xml.defolt_settings do
+       
+  end
 end
 
 File.write('data/candles/minute_candles_db.json', rate.to_json)

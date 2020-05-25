@@ -226,9 +226,9 @@ class LeftScale < GraphImage
     self.pointsize(settings["font_size"])
     self.text_undercolor('#FFFFFFA5')
 
-    self.line(settings["left_padding"],
+    self.line(settings["scale_margin"],
               0,
-              settings["left_padding"],
+              settings["scale_margin"],
               settings["image_height"])
 
     draw_main_marks(settings)
@@ -245,12 +245,12 @@ class LeftScale < GraphImage
 
       y_coord_cashe = to_graph(mark, settings)
 
-      self.line(settings["left_padding"],
+      self.line(settings["scale_margin"],
                 y_coord_cashe,
-                settings["left_padding"] + settings["scale_mark_size"],
+                settings["scale_margin"] + settings["scale_mark_size"],
                 y_coord_cashe)
 
-      self.text(settings["left_padding"] + settings["text_left_padding"],
+      self.text(settings["scale_margin"] + settings["text_left_padding"],
                 y_coord_cashe - settings["text_vert_padding"],
                 mark.to_s.insert(1, '.'))
     end
@@ -269,9 +269,9 @@ class LeftScale < GraphImage
       unless mark % settings["scale_main_step"] == 0
         y_coord_cashe = to_graph(mark, settings)
 
-        self.line(settings["left_padding"],
+        self.line(settings["scale_margin"],
                   y_coord_cashe,
-                  settings["left_padding"] + settings["scale_mark_size"] / 2,
+                  settings["scale_margin"] + settings["scale_mark_size"] / 2,
                   y_coord_cashe)
       end
     end
@@ -281,9 +281,9 @@ class LeftScale < GraphImage
 
         y_coord_cashe = to_graph(mark, settings)
 
-        self.line(settings["left_padding"],
+        self.line(settings["scale_margin"],
                   y_coord_cashe,
-                  settings["left_padding"] + settings["scale_mark_size"] / 2,
+                  settings["scale_margin"] + settings["scale_mark_size"] / 2,
                   y_coord_cashe)
     end
   end
