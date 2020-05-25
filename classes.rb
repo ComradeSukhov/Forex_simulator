@@ -1,7 +1,9 @@
 class GraphWindow < Magick::ImageList
 
-  def initialize(settings)
-    super()
+  def initialize
+    super
+
+    settings = read_settings
 
     self.new_image(settings["image_width"], 
                    settings["image_height"], 
@@ -9,11 +11,28 @@ class GraphWindow < Magick::ImageList
                                          settings["grid_line_color"],
                                          settings["grid_step"]))
 
+
     GraphImage.take_and_process(settings)
     Candles.new.draw(self)
     LeftScale.new.draw(self)
-    # RightScale.new.(settings) .right_scale.draw(self)
-    # BottomScale.new.(settings).bottom_scale.draw(self)
+  
+  end
+  
+  private
+
+  def read_settings
+
+    settings = {}
+    current_path = File.dirname(__FILE__)
+
+    
+    doc = File.read(current_path +
+          "/default_settings.xml").scan /<(\w+)>(\w+)<\/\1>/
+    
+    doc.each { |i| settings[i[0]] = i[1].match(/\A\d+\z/) ? i[1].to_i : i[1] }
+    
+    settings
+
   end
 end
 
@@ -84,7 +103,7 @@ class GraphImage < Magick::Draw
     def scale_step(amplitude) 
       case amplitude
       when 0..5
-        return 1, 0
+        return 1, 1
       when 6..12
         return 2, 1
       when 13..22
@@ -226,9 +245,9 @@ class LeftScale < GraphImage
     self.pointsize(settings["font_size"])
     self.text_undercolor('#FFFFFFA5')
 
-    self.line(settings["left_padding"],
+    self.line(settings["scale_margin"],
               0,
-              settings["left_padding"],
+              settings["scale_margin"],
               settings["image_height"])
 
     draw_main_marks(settings)
@@ -245,12 +264,12 @@ class LeftScale < GraphImage
 
       y_coord_cashe = to_graph(mark, settings)
 
-      self.line(settings["left_padding"],
+      self.line(settings["scale_margin"],
                 y_coord_cashe,
-                settings["left_padding"] + settings["scale_mark_size"],
+                settings["scale_margin"] + settings["scale_mark_size"],
                 y_coord_cashe)
 
-      self.text(settings["left_padding"] + settings["text_left_padding"],
+      self.text(settings["scale_margin"] + settings["text_left_padding"],
                 y_coord_cashe - settings["text_vert_padding"],
                 mark.to_s.insert(1, '.'))
     end
@@ -269,9 +288,9 @@ class LeftScale < GraphImage
       unless mark % settings["scale_main_step"] == 0
         y_coord_cashe = to_graph(mark, settings)
 
-        self.line(settings["left_padding"],
+        self.line(settings["scale_margin"],
                   y_coord_cashe,
-                  settings["left_padding"] + settings["scale_mark_size"] / 2,
+                  settings["scale_margin"] + settings["scale_mark_size"] / 2,
                   y_coord_cashe)
       end
     end
@@ -281,18 +300,11 @@ class LeftScale < GraphImage
 
         y_coord_cashe = to_graph(mark, settings)
 
-        self.line(settings["left_padding"],
+        self.line(settings["scale_margin"],
                   y_coord_cashe,
-                  settings["left_padding"] + settings["scale_mark_size"] / 2,
+                  settings["scale_margin"] + settings["scale_mark_size"] / 2,
                   y_coord_cashe)
     end
   end
 
-end
-
-class RightScale < GraphImage
-
-end
-
-class BottomScale < GraphImage
 end
