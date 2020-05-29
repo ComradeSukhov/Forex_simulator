@@ -25,7 +25,6 @@ class GraphWindow < Magick::ImageList
     settings = {}
     current_path = File.dirname(__FILE__)
 
-    
     doc = File.read(current_path +
       "/default_settings.xml").scan /<(\w+)>(\w+)<\/\1>/ 
     
@@ -44,12 +43,6 @@ class GraphImage < Magick::Draw
     attr_reader :settings
 
     def take_and_process(settings)
-      @settings = add_params(settings)
-    end
-
-    private
-
-    def add_params(settings)
       settings[:history]          = candles_unjson(rate_history)
       settings[:top_extremum]     = top_extremum(settings[:history])
       settings[:low_extremum]     = low_extremum(settings[:history])
@@ -57,12 +50,15 @@ class GraphImage < Magick::Draw
       settings[:scale_ratio]      = scale_ratio(settings)
       settings[:page_bottom]      = page_bottom(settings)
       settings[:page_top]         = page_top(settings)
-      scale_step_cashe             = scale_step(settings[:amplitude])
+      scale_step_cashe            = scale_step(settings[:amplitude])
       settings[:scale_main_step]  = scale_step_cashe[0]
       settings[:scale_small_step] = scale_step_cashe[1]
       settings[:first_mark]       = find_first_mark(settings)
-      settings
+      @settings = settings
     end
+
+    private
+
 
     def rate_history
 
@@ -82,7 +78,8 @@ class GraphImage < Magick::Draw
     end
 
     def amplitude(settings)
-      settings[:top_extremum] - settings[:low_extremum]
+      amplitude = settings[:top_extremum] - settings[:low_extremum]
+      amplitude > 0 ? amplitude : 1
     end
 
     def scale_ratio(settings)
