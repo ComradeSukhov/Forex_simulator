@@ -6,9 +6,9 @@ require_relative '../classes'
 describe 'GraphWindow' do
 
   before(:all) do
-    @graph            = GraphWindow.new
-    @default_settings = @graph.send(:read_settings)
-    @settings         = GraphImage.take_and_process(@graph.send(:read_settings))
+    graph             = GraphWindow.new
+    @default_settings = graph.send(:read_settings)
+    @settings         = GraphImage.take_and_process(graph.send(:read_settings))
   end
 
 
@@ -108,8 +108,16 @@ describe 'GraphWindow' do
   end
 
 
+  describe 'amplitude' do
+
+    it 'should always return positive number' do
+      expect(GraphImage.send(:amplitude, @settings)).to be > 0
+    end    
+
+  end
+
   describe 'scale_ratio' do
-    
+
     it 'should return a value greater than 0' do
       expect(GraphImage.send(:scale_ratio, @settings)).to be > 0
     end
@@ -117,9 +125,65 @@ describe 'GraphWindow' do
 
 
   describe 'page_bottom' do
-    
-    it 'should '
+
+    before(:all) do
+      rate_value = GraphImage.send(:page_bottom, @settings)
+      @y_coord     = GraphImage.new.send(:to_graph, rate_value, @settings)
+    end
+
+    it "should never return values that render lower than" +
+    "the image's bottom edge" do    
+
+      expect(@y_coord).not_to be > @settings[:image_height] - 1
+
+    end
+
+    it "should never return values that render higher than" +
+    "the image's bottom edge more than by sclae ratio" do
+
+      expect(@y_coord).not_to be < @settings[:image_height] - 1 -
+      @settings[:scale_ratio]
+
+    end
 
   end
+
+
+  describe 'page_top' do
+    before(:all) do
+      rate_value  = GraphImage.send(:page_top, @settings)
+      @y_coord     = GraphImage.new.send(:to_graph, rate_value, @settings)
+    end
+
+    it "should never return values that render higher than
+    the image's top edge" do
+
+    expect(@y_coord).not_to be < 0
+  end
+
+    it "should never return values that render lower than
+    the image's top edge more than by scale_ratio" do
+
+    expect(@y_coord).not_to be > @settings[:scale_ratio]
+    end
+  end
+
+
+  describe 'find_first_mark' do
+
+    it "should never return values that render higher than" +
+    "the image's bottom age more by than main_step" do
+
+      rate_value  = GraphImage.send(:find_first_mark, @settings)
+      y_coord     = GraphImage.new.send(:to_graph, rate_value, @settings)
+
+      expect(y_coord).not_to be < @settings[:image_height] - 1 -
+      @settings[:scale_main_step] * @settings[:scale_ratio]
+
+    end
+  end
+
+
+  
 
 end

@@ -79,7 +79,7 @@ class GraphImage < Magick::Draw
 
     def amplitude(settings)
       amplitude = settings[:top_extremum] - settings[:low_extremum]
-      amplitude > 0 ? amplitude : 1
+      amplitude == 0 ? 1 : amplitude
     end
 
     def scale_ratio(settings)
@@ -104,48 +104,48 @@ class GraphImage < Magick::Draw
     end
 
     def scale_step(amplitude) 
+      
       case amplitude
-      when 0..5
+        when 0..5
         return 1, 1
       when 6..12
         return 2, 1
       when 13..22
         return 5, 1
-      when 23..45
+      when 23..49
         return 10, 5
-      when 46..90
-        return 20, 5
-      when 90..110
-        return 25, 5
-      when 111..180
-        return 40, 10
-      when 181..270
-        return 50, 10
-      when 271..320
-        return 75, 25
-      when 321...650
-        return 100, 50
       else
-        handsome_round(amplitude)
-      end
-    end
-
-    def handsome_round(amplitude) 
-      number = amplitude / 5
-      arr    = number.digits.reverse
-
-      if (3..7).any?(arr[1]) 
-        arr[1] = 5
-      elsif (0..2).any?(arr[1])
-        arr[1] = 0
-      else
-        arr[0] += 1
-        arr[1] = 0
+        handsome_step(amplitude)
       end
 
-      (2...arr.size).each { |i| arr[i] = 0 }
-      arr.join.to_i
     end
+
+    def handsome_step(amplitude)
+
+      approx_steps_size  = amplitude / 5
+      base_values        = [10, 20, 25, 50, 100]
+      small_step_scaling = [5, 4, 5, 5, 5]
+      power_difference   = approx_steps_size.digits.size - 2
+
+      distances = base_values.map do |v|
+        (v * 10**power_difference - approx_steps_size).abs
+      end
+
+      min   = distances.min
+      index = distances.index(distances.min)
+
+      if distances.count(min) == 1
+        main_step  = base_values[index] * 10**power_difference 
+        small_step = main_step / small_step_scaling[index]
+        [main_step, small_step]
+      else
+        main_step  = base_values[index + 1] * 10**power_difference 
+        small_step = main_step / small_step_scaling[index + 1]
+        [main_step, small_step]
+      end
+
+    end
+
 
     def candles_unjson(rate_history)
       rate_history.each_key do |key|
@@ -170,8 +170,8 @@ class GraphImage < Magick::Draw
   private
   
   def to_graph(value, settings)
-    (settings[:top_extremum] - value) * 
-    settings[:scale_ratio] + settings[:vertical_padding]
+    ((settings[:top_extremum] - value) * 
+        settings[:scale_ratio] + settings[:vertical_padding]).to_int
   end
 end
 
@@ -280,7 +280,11 @@ class LeftScale < GraphImage
 
       self.text(settings[:scale_margin] + settings[:text_left_padding],
         y_coord_cashe - settings[:text_vert_padding],
-        mark.to_s.insert(1, '.'))
+        mark.to_s.insert(1, '.')
+        # написать метод для mark, который будет проверять, что бы
+        # число было из 5 цифр
+
+        )
     end
   end
 
