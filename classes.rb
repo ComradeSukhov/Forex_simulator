@@ -6,10 +6,10 @@ class GraphWindow < Magick::ImageList
     settings = read_settings
 
     self.new_image(settings[:image_width], 
-     settings[:image_height], 
+                   settings[:image_height], 
      Magick::HatchFill.new(settings[:grid_main_color],
-       settings[:grid_line_color],
-       settings[:grid_step]))
+                           settings[:grid_line_color],
+                           settings[:grid_step]))
 
 
     GraphImage.take_and_process(settings)
@@ -43,7 +43,7 @@ class GraphImage < Magick::Draw
     attr_reader :settings
 
     def take_and_process(settings)
-      settings[:history]          = candles_unjson(rate_history)
+      settings[:history]          = candles_unjson
       settings[:top_extremum]     = top_extremum(settings[:history])
       settings[:low_extremum]     = low_extremum(settings[:history])
       settings[:amplitude]        = amplitude(settings)
@@ -59,6 +59,20 @@ class GraphImage < Magick::Draw
 
     private
 
+    def candles_unjson
+      history = rate_history
+      history.each_key do |key|
+        history[key].transform_keys!(&:to_sym).each_pair do |k, v|
+          
+          history[key][k] = currency_rate_to_graph_points(v)
+
+        end
+      end
+    end
+
+    def currency_rate_to_graph_points(value)
+      (value * 10_000).round
+    end 
 
     def rate_history
 
@@ -145,20 +159,6 @@ class GraphImage < Magick::Draw
       end
 
     end
-
-
-    def candles_unjson(rate_history)
-      rate_history.each_key do |key|
-        rate_history[key].transform_keys(&:to_sym).each_pair do |k, v|
-          rate_history[key][k] = currency_rate_to_graph_points(v)
-
-        end
-      end
-    end
-
-    def currency_rate_to_graph_points(value)
-      (value * 10_000).round
-    end 
 
   end
 
